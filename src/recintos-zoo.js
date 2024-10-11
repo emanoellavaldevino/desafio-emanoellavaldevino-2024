@@ -22,6 +22,11 @@ class RecintosZoo {
             HIPOPOTAMO: { tamanho: 4, biomas: ['savana', 'rio'], carnivoro: false },
         };
     }
+     
+    // Cria uma string formatada com as informações do recinto viável
+    adicionarRecintoViavel(recinto, espacoRestante, especie, quantidade, recintosViaveis) {
+        recintosViaveis.push(`Recinto ${recinto.numero} (espaço livre: ${espacoRestante - especie.tamanho * quantidade} total: ${recinto.tamanhoTotal})`);
+    }
 
     /**
      * Analisa os recintos disponíveis para encontrar quais são viáveis para abrigar o novo animal.
@@ -29,12 +34,21 @@ class RecintosZoo {
      * @param {string} animal - O nome da espécie do animal.
      * @param {number} quantidade - A quantidade de indivíduos do animal.
      * @returns {Object} - Um objeto contendo uma lista de recintos viáveis ou uma mensagem de erro.
-     * 
+     * @param {Array} recintosViaveis - O array que armazena as informações dos recintos considerados viáveis para abrigar o novo animal.
+
      * Se nenhum recinto for viável, retorna { erro: "Não há recinto viável" }.
      * Se o animal for inválido, retorna { erro: "Animal inválido" }.
      * Se a quantidade for inválida, retorna { erro: "Quantidade inválida" }.
+     * 
+     * A string gerada é então adicionada ao array `recintosViaveis`, permitindo um registro claro
+     * e organizado dos recintos que podem acomodar a nova espécie.
+     * 
+     * A criação desta função melhora a legibilidade e a modularidade do código, 
+     * permitindo que a lógica de adição de recintos viáveis seja encapsulada em um único lugar. 
+     * Isso facilita a manutenção e a possibilidade de reutilização em outras partes do código,
+     * caso necessário.
+     * 
      */
-
     analisaRecintos(animal, quantidade) {
         //  Verifica se o animal passado como argumento está presente no objeto animaisPermitidos
         if (!this.animaisPermitidos[animal]) {
@@ -45,7 +59,8 @@ class RecintosZoo {
         if (quantidade <= 0) {
             return { erro: "Quantidade inválida" };
         }
-         // Armazena as características da espécie do animal atual, como tamanho e bioma permitido
+
+        // Armazena as características da espécie do animal atual, como tamanho e bioma permitido
         const especie = this.animaisPermitidos[animal]; 
         const recintosViaveis = []; // Inicializa um array vazio para registrar os recintos que podem abrigar o novo animal
 
@@ -62,26 +77,26 @@ class RecintosZoo {
                 return total + (especieAnimal.tamanho * a.quantidade); // Soma o espaço ocupado pelos animais no recinto
             }, 0);
 
-                // Verifica se há mais de uma espécie no recinto. Se houver, será necessário adicionar espaço extra.
+            // Verifica se há mais de uma espécie no recinto. Se houver, será necessário adicionar espaço extra.
             const temMaisDeUmaEspecie = recinto.animais.length > 0 && !recinto.animais.some(a => a.especie === animal);
             const espacoExtra = temMaisDeUmaEspecie ? 1 : 0; // Adiciona 1 de espaço extra se o recinto já tiver animais de outras espécies
             const espacoRestante = recinto.tamanhoTotal - espacoOcupado - espacoExtra;
 
-           // Verifica se o bioma do recinto é compatível com a espécie do animal
+            // Verifica se o bioma do recinto é compatível com a espécie do animal
             const biomasRecinto = recinto.bioma.split(' e '); // Divide os biomas compostos como "savana e rio"
             const biomaValido = especie.biomas.some(bioma => biomasRecinto.includes(bioma));
 
             // Verifica se já há carnívoros no recinto
             const carnivoroNoRecinto = recinto.animais.some(a => this.animaisPermitidos[a.especie].carnivoro);
 
-                // Se o bioma for válido e houver espaço suficiente, o recinto pode ser considerado viável
+            // Se o bioma for válido e houver espaço suficiente, o recinto pode ser considerado viável
             if (biomaValido && espacoRestante >= especie.tamanho * quantidade) {
                 if (especie.carnivoro && (recinto.animais.length === 0 || recinto.animais[0].especie === animal)) {
                     // Carnívoros só podem estar sozinhos ou com a própria espécie
-                    recintosViaveis.push(`Recinto ${recinto.numero} (espaço livre: ${espacoRestante - especie.tamanho * quantidade} total: ${recinto.tamanhoTotal})`);
+                    this.adicionarRecintoViavel(recinto, espacoRestante, especie, quantidade, recintosViaveis);
                 } else if (!especie.carnivoro && !carnivoroNoRecinto) {
                     // Para não-carnívoros: podem compartilhar recinto com outras espécies, desde que não haja carnívoros
-                    recintosViaveis.push(`Recinto ${recinto.numero} (espaço livre: ${espacoRestante - especie.tamanho * quantidade} total: ${recinto.tamanhoTotal})`);
+                    this.adicionarRecintoViavel(recinto, espacoRestante, especie, quantidade, recintosViaveis);
                 }
             }
         });
